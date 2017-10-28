@@ -26,4 +26,6 @@ Our Hack will try to solve all above-mentioned issues in an structured and organ
 1) IF the blood is transfused to recipient than another node will be generated with recipent details and transfused area name iddicating blood has been used.
 
 ### IoT work
-1) IoT  is used for atentication of donor and 
+1) IoT  is used for autaentication of donor and ID generation at blood donation camp.
+1) IoT devices also check units and update the block chain.
+1) At recipient id of recipient  will be checked and block chain will be updated again.
