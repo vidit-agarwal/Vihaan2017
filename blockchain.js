@@ -1,11 +1,15 @@
 var http = require('http');
+var mysql = require('mysql') ;
+var url = require('url')
+var con= mysql.createConnection({
+        host: 'localhost' ,
+        user : 'root',
+        password : '',
+        database : 'blood_block'
+});
 
-http.createServer(function (req, res) {
-
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-
-		const SHA256 = require('crypto-js/sha256') ;
-		class Block{
+const SHA256 = require('crypto-js/sha256') ;
+class Block{
 			constructor(index , timestamp, location , prevLocation , donor,recipient ,bloodGroup, previousHash=''){
 					this.index = index ;
 					this.timestamp= timestamp ;
@@ -32,11 +36,11 @@ http.createServer(function (req, res) {
 					this.hash = this.calculateHash() ;
 
 				}
-				console.log("Block Mined : " + this.hash) ;
+				
 			}
-		}
+}
 
-		class Blockchain{
+class Blockchain{
 			constructor(){
 				this.chain=[this.createGenesisBlock()] ;
 				this.difficulty = 4;
@@ -74,28 +78,153 @@ http.createServer(function (req, res) {
 				}
 				return true ;
 			}
+}
+let myBlockChain = new Blockchain() ;
 
-		}
 
-		let myBlockChain = new Blockchain() ;
+http.createServer(function (req, res) {
+    
+    
+    res.writeHead(200, {'Content-Type': 'text/plain'});
 
-		//res.end("Mining BLock 1...\n") ;
+		
 
-		myBlockChain.addBlock(new Block(1, "10/10/2017", "LAJPAT NAGAR", "OKHLA", "Mr. Akshay Sharma", "Ms. Sanjini Gupta", "B+"  )) ;
+		
 
-		//res.end("MINING BLOCK 2...\n") ;
+	
+        var sql = "INSERT INTO block(id , timestamp,location,prev_location,donor,recipient, blood_group, prev_hash , hash) VALUES ('1', '10/10/2017', 'LAJPAT NAGAR', 'OKHLA', 'Mr. Akshay Sharma', 'Ms. Sanjini Gupta', 'B+' ,'000829183012863','0003724612926')" ;
+        con.query(sql, function(err, result){
+            if(err) throw err;
+            console.log('Success') ;
+        }) ;
 
-		myBlockChain.addBlock(new Block(1, "10/10/2017", "GAGAN VIHAR", "LAJPAT NAGAR", "Mr. Rahul Sharma", "Ms. Sanjay Gupta", "O+"  )) ;
-
-		//res.end("MINING BLOCK 3... \n")
-		myBlockChain.addBlock(new Block(1, "10/10/2017", "SWASTHA VIHAR", "OKHLA", "Mr. Ajay Sharma", "Ms. Neha", "A-"  )) ;
-		res.end("MINING BLOCK 3... \n") ;
+		res.end("MINING BLOCKS... \n") ;
 
 		console.log(JSON.stringify(myBlockChain, null,3)) ;
 
 
-}).listen(8081, '192.168.137.155');
-console.log('Server running at http://192.168.137.155:80/');
+}).listen(8081, '192.168.43.132');
+http.createServer(function(req, res){
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    var requrl = url.parse(req.url,true).query;
+    console.log(requrl);
+    var donor = requrl.donor_name;
+    var blood_group = requrl.blood_group;
+    var cur_location = requrl.location;
+    var str = "Donor =" + donor + " Blood Group =" + blood_group + " location =" + cur_location;
+   
+    var time = new Date().toISOString().replace(/T/,' ').replace(/\..+/,'') ;
+    
+    
+    myBlockChain.addBlock(new Block(myBlockChain.chain[myBlockChain.chain.length -1].index+1, time, cur_location, '', donor, '', blood_group )) ;
+    
+    var myBlock = new Block(myBlockChain.chain[myBlockChain.chain.length -1].index+1 , time , cur_location,'',donor,'',blood_group,'');
+    
+    
+    
+    var sql = "INSERT INTO block(id , timestamp , location , prev_location , donor, recipient, blood_group, prev_hash , hash) VALUES ("+(myBlockChain.chain[myBlockChain.chain.length -1].index);
+    sql = sql + ",'" +time+"','";
+    sql = sql + cur_location + "','";
+    sql = sql + "','"+ donor;
+    sql = sql + "','','";
+    sql = sql + blood_group + "','','";
+    sql = sql + myBlock.calculateHash() + "')" ;
+      res.write(sql) ;
+        con.query(sql, function(err, result){
+            if(err) throw err;
+            console.log('Success') ;
+        }) ;
+    
+    console.log("\n") ;
+    console.log("Block Mined : ") ;
+    console.log(JSON.stringify(myBlockChain, null, myBlockChain.chain[myBlockChain.chain.length])) ;
+    console.log("\n") ;
+    res.write(str);
+    res.end();
+    
+}).listen(8084,'192.168.43.132')  ;
+
+/*http.createServer(function(req, res){
+    
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    var requrl = url.parse(req.url,true).query;
+    
+    console.log(requrl);
+    
+    var donor = requrl.donor_name;
+    var blood_group = requrl.blood_group;
+    var cur_location = requrl.location;
+    var str = "Donor =" + donor + " Blood Group =" + blood_group + " location =" + cur_location;
+   
+    var time = new Date().toISOString().replace(/T/,' ').replace(/\..+/,'') ;
+    
+    
+    myBlockChain.addBlock(new Block(myBlockChain.chain[myBlockChain.chain.length -1].index+1, time, cur_location, '', donor, '', blood_group )) ;
+    
+    var myBlock = new Block(myBlockChain.chain[myBlockChain.chain.length -1].index+1 , time , cur_location,'',donor,'',blood_group,'');
+    
+    
+    
+    var sql = "INSERT INTO block(id , timestamp , location , prev_location , donor, recipient, blood_group, prev_hash , hash) VALUES ("+(myBlockChain.chain[myBlockChain.chain.length -1].index);
+    sql = sql + ",'" +time+"','";
+    sql = sql + cur_location + "','";
+    sql = sql + "','"+ donor;
+    sql = sql + "','','";
+    sql = sql + blood_group + "','','";
+    sql = sql + myBlock.calculateHash() + "')" ;
+      res.write(sql) ;
+        con.query(sql, function(err, result){
+            if(err) throw err;
+            console.log('Success') ;
+        }) ;
+    
+    console.log("\n") ;
+    console.log("Block Mined : ") ;
+    console.log(JSON.stringify(myBlockChain, null, myBlockChain.chain[myBlockChain.chain.length])) ;
+    console.log("\n") ;
+    res.write(str);
+    res.end();
+    
+}).listen(8085,'192.168.137.1')  ;*/
+
+console.log('Server running at http://192.168.137.1:8081/');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
